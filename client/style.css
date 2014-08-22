@@ -1,0 +1,25 @@
+body {
+	margin: 0;
+	padding: 0;
+	background: #1A1A1A;
+	overflow: hidden;
+}
+
+#map {
+	position: relative;
+	width: 100%;
+	margin: auto;
+}
+
+#status {
+	position: absolute;
+	top: 100px;
+	left: 0;
+	padding: 15px;
+	width: 100%;
+	text-align: center;
+	background-color: rgba(0, 0, 0, 0.9);
+	color: #FFFFFF;
+	font-size: 4em;
+	transition: 0.5s;
+}
