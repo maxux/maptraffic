@@ -1,15 +1,12 @@
-include config.mk
+EXEC = mapanalyzer
+
+CFLAGS  = -W -Wall -O2
+LDFLAGS = -lpcap -lhiredis
 
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 
-all: options $(EXEC)
-
-options: config.mk
-	@echo $(EXEC) build options:
-	@echo "CFLAGS   = $(CFLAGS)"
-	@echo "LDFLAGS  = $(LDFLAGS)"
-	@echo "CC       = $(CC)"
+all: $(EXEC)
 
 $(EXEC): $(OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
