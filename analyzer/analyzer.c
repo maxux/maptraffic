@@ -61,6 +61,7 @@ void callback(unsigned char *_user, const struct pcap_pkthdr *h, const u_char *b
         ipheader = (struct iphdr *) packet;
 
         char strsrc[16], strdst[16];
+        char payload[128];
 
         utoip(ipheader->saddr, src);
         utoip(ipheader->daddr, dst);
@@ -78,7 +79,11 @@ void callback(unsigned char *_user, const struct pcap_pkthdr *h, const u_char *b
         printf("%s -> %s\n", strsrc, strdst);
         fflush(stdout);
 
-        reply = redisCommand(user->redis, "PUBLISH maptraffic '{\"src\":\"%s\",\"dst\":\"%s\"}'", strsrc, strdst);
+        sprintf(payload, "{\"src\":\"%s\",\"dst\":\"%s\"}", strsrc, strdst);
+
+        const char *argv[] = {"PUBLISH", "maptraffic", payload};
+        reply = redisCommandArgv(user->redis, 3, argv, NULL);
+
         if(!reply || reply->type != REDIS_REPLY_INTEGER)
             fprintf(stderr, "wrong redis reply: %s\n", reply->str);
 
