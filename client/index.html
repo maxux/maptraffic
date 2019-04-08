@@ -11,7 +11,7 @@
 	<script src="http://d3js.org/d3.v3.js"></script>
 	<script src="http://datamaps.github.io/scripts/topojson.js"></script>
 	<script src="http://datamaps.github.io/scripts/datamaps.none.min.js"></script>
-	
+
 	<div id="map"></div>
 	<div id="status">Loading map...</div>
 
@@ -19,7 +19,7 @@
 	var disabled = 0;
 	var deletion = 0;
 	var arcs = [{}];
-	
+
 	//basic map config with custom fills, mercator projection
 	var map = new Datamap({
 		scope: 'world',
@@ -28,9 +28,9 @@
 		setProjection: function(element) {
 			var projection = d3.geo.mercator()
 				.center([10, 44])
-				.scale(1000)
+				.scale(500)
 				.translate([element.offsetWidth / 2, element.offsetHeight / 2]);
-				
+
 			var path = d3.geo.path().projection(projection);
 
 			return {path: path, projection: projection};
@@ -47,19 +47,19 @@
 		},
 		done: starting
 	});
-	
+
 	function input(message) {
 		// console.log(message);
-		
+
 		if(deletion > 2048) {
 			for(var i = 0; i < arcs.length; i++)
 				delete arcs[i];
-			
+
 			arcs.length = 0;
 			deletion = 0;
-			
+
 		} else arcs[deletion++] = {};
-		
+
 		arcs[arcs.length] =  {
 			origin: {
 				latitude: message.src[0],
@@ -73,33 +73,33 @@
 				strokeColor: message.coloring
 			}
 		};
-		
+
 		map.arc(arcs, {strokeWidth: 2, arcSharpness: 0});
 	}
-	
+
 	function status(str) {
 		 $('#status').html(str);
 	}
-	
+
 	function connect() {
 		var self = this;
-		
-		this.socket = new WebSocket("ws://www.maxux.net:1441/", "maptraffic");
-		
+
+		this.socket = new WebSocket("ws://10.241.0.18:1441/", "maptraffic");
+
 		this.socket.onopen = function() {
 			$('#status').css('background-color', 'rgba(0, 100, 0, 0.8)');
 			status('Connected');
 			$('#status').css('opacity', 0);
 		}
-		
+
 		this.socket.onmessage = function(msg) {
 			if(disabled)
 				return;
-				
+
 			json = JSON.parse(msg.data);
 			input(json);
 		}
-		
+
 		this.socket.onclose = function() {
 			status('Connection lost, reconnecting...');
 			$('#status').css('background-color', 'rgba(100, 0, 0, 0.8)');
@@ -107,12 +107,18 @@
 			connect();
 		}
 	}
-	
-	function starting() {
+
+	function starting(datamap) {
 		status('Map ready, connecting...');
+
+        datamap.svg.call(d3.behavior.zoom().on("zoom", redraw));
+        function redraw() {
+            // datamap.svg.selectAll("g").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        }
+
 		connect();
 	}
-	
+
 	//
 	// performance impact
 	// disabling rendering when page lost focus
