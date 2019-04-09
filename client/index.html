@@ -17,8 +17,8 @@
 
 	<script>
 	var disabled = 0;
-	var deletion = 0;
-	var arcs = [{}];
+	var arcs = [];
+    var animationTime = 500;
 
 	//basic map config with custom fills, mercator projection
 	var map = new Datamap({
@@ -35,6 +35,11 @@
 
 			return {path: path, projection: projection};
 		},
+        arcConfig: {
+            strokeWidth: 2,
+            arcSharpness: 0,
+            animationSpeed: animationTime,
+        },
 		geographyConfig: {
 			hideAntarctica: false,
 			highlightOnHover: true,
@@ -48,19 +53,28 @@
 		done: starting
 	});
 
+    /*
+    function getRandomArbitrary(min, max) {
+        return Math.random() * (max - min) + min;
+    }
+
+    function generate() {
+        input({
+            coloring: "#60FF75",
+            dst: [getRandomArbitrary(40, 50) , getRandomArbitrary(1, 10)],
+            src: [getRandomArbitrary(55, 70), getRandomArbitrary(1, 10)],
+        });
+    }
+    */
+
+    function generate() {
+
+    }
+
 	function input(message) {
 		// console.log(message);
 
-		if(deletion > 2048) {
-			for(var i = 0; i < arcs.length; i++)
-				delete arcs[i];
-
-			arcs.length = 0;
-			deletion = 0;
-
-		} else arcs[deletion++] = {};
-
-		arcs[arcs.length] =  {
+		arcs.push({
 			origin: {
 				latitude: message.src[0],
 				longitude: message.src[1]
@@ -72,9 +86,16 @@
 			options: {
 				strokeColor: message.coloring
 			}
-		};
+		});
 
-		map.arc(arcs, {strokeWidth: 2, arcSharpness: 0});
+		map.arc(arcs);
+
+        setTimeout(function() {
+            // remove first arc from the list
+            arcs.shift();
+            map.arc(arcs);
+
+        }, animationTime);
 	}
 
 	function status(str) {
@@ -84,7 +105,7 @@
 	function connect() {
 		var self = this;
 
-		this.socket = new WebSocket("ws://10.241.0.18:1441/", "maptraffic");
+		this.socket = new WebSocket("ws://home.maxux.net:1441/", "maptraffic");
 
 		this.socket.onopen = function() {
 			$('#status').css('background-color', 'rgba(0, 100, 0, 0.8)');
@@ -109,13 +130,12 @@
 	}
 
 	function starting(datamap) {
-		status('Map ready, connecting...');
-
         datamap.svg.call(d3.behavior.zoom().on("zoom", redraw));
         function redraw() {
-            // datamap.svg.selectAll("g").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+            datamap.svg.selectAll("g").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
         }
 
+		status('Map ready, connecting...');
 		connect();
 	}
 
