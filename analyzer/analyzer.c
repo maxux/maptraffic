@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    if((pdes = pcap_open_live(argv[1], SNAP_LEN, IFF_PROMISC, 500, err_buff)) == NULL)
+    if((pdes = pcap_open_live(argv[1], SNAP_LEN, 0, 500, err_buff)) == NULL)
         diepcap("pcap_open_live", err_buff);
 
     if(pcap_lookupnet(argv[1], &netp, &maskp, err_buff) == -1)
