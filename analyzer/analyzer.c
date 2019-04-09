@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <pcap.h>
 #include <netinet/in.h>
 #include <netinet/ether.h>
@@ -19,6 +20,8 @@
 
 typedef struct pcap_user_t {
     redisContext *redis;
+    size_t totalreq;
+    struct timeval idle;
 
 } pcap_user_t;
 
@@ -41,6 +44,10 @@ unsigned char *utoip(int ip, unsigned char *buf) {
     buf[3] = (ip >> 24) & 0xFF;
 
     return buf;
+}
+
+double timevalue(struct timeval *tv) {
+    return tv->tv_sec + (tv->tv_usec / 1000000.0);
 }
 
 void callback(unsigned char *_user, const struct pcap_pkthdr *h, const u_char *buff) {
@@ -75,9 +82,19 @@ void callback(unsigned char *_user, const struct pcap_pkthdr *h, const u_char *b
 
         sprintf(strsrc, "%d.%d.%d.%d", src[0], src[1], src[2], src[3]);
         sprintf(strdst, "%d.%d.%d.%d", dst[0], dst[1], dst[2], dst[3]);
+        // printf("%s -> %s\n", strsrc, strdst);
 
-        printf("%s -> %s\n", strsrc, strdst);
-        fflush(stdout);
+        user->totalreq += 1;
+        if(user->totalreq % 768 == 0) {
+            struct timeval now;
+            gettimeofday(&now, NULL);
+
+            double pps = 768.0 / (timevalue(&now) - timevalue(&user->idle));
+            printf("[+] update: %lu packets analyzed (~%.0f packet/sec)\n", user->totalreq, pps);
+
+            // setting last time to now
+            gettimeofday(&user->idle, NULL);
+        }
 
         sprintf(payload, "{\"src\":\"%s\",\"dst\":\"%s\"}", strsrc, strdst);
 
@@ -99,12 +116,16 @@ int main(int argc, char *argv[]) {
     struct bpf_program bp;
     pcap_user_t user = {
         .redis = NULL,
+        .totalreq = 0,
     };
 
     if(argc < 2) {
         fprintf(stderr, "[-] usage: %s interface\n", argv[0]);
         return 1;
     }
+
+    // set initial time
+    gettimeofday(&user.idle, NULL);
 
     // connect redis backend tcp
     if(!(user.redis = redisConnect("127.0.0.1", 6379)))
@@ -127,6 +148,7 @@ int main(int argc, char *argv[]) {
     if(pcap_setfilter(pdes, &bp) < 0)
         diepcap("pcap_setfilter", pcap_geterr(pdes));
 
+    printf("[+] sniffing packets\n");
     if(pcap_loop(pdes, -1, callback, (void *) &user) < 0)
         diepcap("pcap_loop", pcap_geterr(pdes));
 
