@@ -1,57 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8" />
-	<title>Maxux Realtime Traffic Mapper</title>
-	<link rel="stylesheet" href="style.css" media="all" type="text/css" />
-	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <meta charset="utf-8" />
+    <title>Maxux Realtime Traffic Mapper</title>
+    <link rel="stylesheet" href="style.css" media="all" type="text/css" />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 </head>
 
 <body>
-	<script src="http://d3js.org/d3.v3.js"></script>
-	<script src="http://datamaps.github.io/scripts/topojson.js"></script>
-	<script src="http://datamaps.github.io/scripts/datamaps.none.min.js"></script>
+    <script src="http://d3js.org/d3.v3.js"></script>
+    <script src="http://datamaps.github.io/scripts/topojson.js"></script>
+    <script src="http://datamaps.github.io/scripts/datamaps.none.min.js"></script>
 
-	<div id="map"></div>
-	<div id="status">Loading map...</div>
+    <button onclick="generate();">XXX</button>
+    <div id="map"></div>
+    <div id="status">Loading map...</div>
 
-	<script>
-	var disabled = 0;
-	var arcs = [];
+    <script type="text/javascript">
+    var disabled = 0;
+    var arcs = [];
     var animationTime = 500;
 
-	//basic map config with custom fills, mercator projection
-	var map = new Datamap({
-		scope: 'world',
-		element: document.getElementById('map'),
-		projection: 'mercator',
-		setProjection: function(element) {
-			var projection = d3.geo.mercator()
-				.center([10, 44])
-				.scale(500)
-				.translate([element.offsetWidth / 2, element.offsetHeight / 2]);
+    //basic map config with custom fills, mercator projection
+    var map = new Datamap({
+        scope: 'world',
+        element: document.getElementById('map'),
+        projection: 'mercator',
+        setProjection: function(element) {
+            var projection = d3.geo.mercator()
+                .center([10, 44])
+                .scale(500)
+                .translate([element.offsetWidth / 2, element.offsetHeight / 2]);
 
-			var path = d3.geo.path().projection(projection);
+            var path = d3.geo.path().projection(projection);
 
-			return {path: path, projection: projection};
-		},
+            return {path: path, projection: projection};
+        },
         arcConfig: {
             strokeWidth: 2,
             arcSharpness: 0,
             animationSpeed: animationTime,
         },
-		geographyConfig: {
-			hideAntarctica: false,
-			highlightOnHover: true,
-			highlightFillColor: '#3B3B3B',
-			highlightBorderColor: '#FFFFFF',
-			dataUrl: 'maps/world.topo.hi-res.json',
-		},
-		fills: {
-			defaultFill: '#1E1E1E',
-		},
-		done: starting
-	});
+        geographyConfig: {
+            hideAntarctica: false,
+            highlightOnHover: true,
+            highlightFillColor: '#3B3B3B',
+            highlightBorderColor: '#FFFFFF',
+            dataUrl: 'maps/world.topo.hi-res.json',
+        },
+        fills: {
+            defaultFill: '#1E1E1E',
+        },
+        done: starting
+    });
 
     /*
     function getRandomArbitrary(min, max) {
@@ -71,24 +72,24 @@
 
     }
 
-	function input(message) {
-		// console.log(message);
+    function input(message) {
+        // console.log(message);
 
-		arcs.push({
-			origin: {
-				latitude: message.src[0],
-				longitude: message.src[1]
-			},
-			destination: {
-				latitude: message.dst[0],
-				longitude: message.dst[1]
-			},
-			options: {
-				strokeColor: message.coloring
-			}
-		});
+        arcs.push({
+            origin: {
+                latitude: message.src[0],
+                longitude: message.src[1]
+            },
+            destination: {
+                latitude: message.dst[0],
+                longitude: message.dst[1]
+            },
+            options: {
+                strokeColor: message.coloring
+            }
+        });
 
-		map.arc(arcs);
+        map.arc(arcs);
 
         setTimeout(function() {
             // remove first arc from the list
@@ -96,62 +97,62 @@
             map.arc(arcs);
 
         }, animationTime);
-	}
+    }
 
-	function status(str) {
-		 $('#status').html(str);
-	}
+    function status(str) {
+         $('#status').html(str);
+    }
 
-	function connect() {
-		var self = this;
+    function connect() {
+        var self = this;
 
-		this.socket = new WebSocket("ws://home.maxux.net:1441/", "maptraffic");
+        this.socket = new WebSocket("ws://home.maxux.net:1441/", "maptraffic");
 
-		this.socket.onopen = function() {
-			$('#status').css('background-color', 'rgba(0, 100, 0, 0.8)');
-			status('Connected');
-			$('#status').css('opacity', 0);
-		}
+        this.socket.onopen = function() {
+            $('#status').css('background-color', 'rgba(0, 100, 0, 0.8)');
+            status('Connected');
+            $('#status').css('opacity', 0);
+        }
 
-		this.socket.onmessage = function(msg) {
-			if(disabled)
-				return;
+        this.socket.onmessage = function(msg) {
+            if(disabled)
+                return;
 
-			json = JSON.parse(msg.data);
-			input(json);
-		}
+            json = JSON.parse(msg.data);
+            input(json);
+        }
 
-		this.socket.onclose = function() {
-			status('Connection lost, reconnecting...');
-			$('#status').css('background-color', 'rgba(100, 0, 0, 0.8)');
-			$('#status').css('opacity', 1);
-			connect();
-		}
-	}
+        this.socket.onclose = function() {
+            status('Connection lost, reconnecting...');
+            $('#status').css('background-color', 'rgba(100, 0, 0, 0.8)');
+            $('#status').css('opacity', 1);
+            connect();
+        }
+    }
 
-	function starting(datamap) {
+    function starting(datamap) {
         datamap.svg.call(d3.behavior.zoom().on("zoom", redraw));
         function redraw() {
             datamap.svg.selectAll("g").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
         }
 
-		status('Map ready, connecting...');
-		connect();
-	}
+        status('Map ready, connecting...');
+        connect();
+    }
 
-	//
-	// performance impact
-	// disabling rendering when page lost focus
-	//
-	function onBlur() {
-		disabled = 1;
-	};
+    //
+    // performance impact
+    // disabling rendering when page lost focus
+    //
+    function onBlur() {
+        disabled = 1;
+    };
 
-	function onFocus() {
-		disabled = 0;
-	};
+    function onFocus() {
+        disabled = 0;
+    };
 
-	window.onfocus = onFocus;
-	window.onblur = onBlur;
-	</script>
+    window.onfocus = onFocus;
+    window.onblur = onBlur;
+    </script>
 </body>
