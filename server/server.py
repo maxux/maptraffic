@@ -9,8 +9,9 @@ class MapTrafficServer():
     def __init__(self):
         self.wsclients = set()
         self.redis = redis.Redis()
-        self.geoip = geoip2.database.Reader('/home/maxux/git/maptraffic/database/GeoLite2-City_20190402/GeoLite2-City.mmdb')
+        self.geoip = geoip2.database.Reader('../database/GeoLite2-City_20190402/GeoLite2-City.mmdb')
         self.publicip = "82.212.177.72"
+        self.cooldown = {}
         self.colors = [
             '#F0FF60', '#FFC460', '#FF7D60',
 	    '#FF6081', '#FF60C0', '#FF60F7',
@@ -63,7 +64,26 @@ class MapTrafficServer():
         while True:
             message = pubsub.get_message()
             if message and message['type'] == 'message':
+                # skipping of no clients are connected
+                if not len(self.wsclients):
+                    continue
+
                 handler = json.loads(message['data'].decode('utf-8'))
+                target = '0.0.0.0'
+
+                if handler['src'] == self.publicip:
+                    target = handler['dst']
+
+                    if handler['dst'] in self.cooldown:
+                        if self.cooldown[handler['dst']] == int(time.time()):
+                            continue
+
+                if handler['dst'] == self.publicip:
+                    target = handler['src']
+
+                    if handler['src'] in self.cooldown:
+                        if self.cooldown[handler['src']] == int(time.time()):
+                            continue
 
                 print("[+] data from analyzer: %s" % handler)
 
@@ -90,6 +110,8 @@ class MapTrafficServer():
                     "dst": [dstobj.location.latitude, dstobj.location.longitude],
                     "coloring": self.colors[ip % len(self.colors)],
                 }
+
+                self.cooldown[target] = int(time.time())
 
                 # forwarding
                 await self.wsbroadcast(json.dumps(payload))
